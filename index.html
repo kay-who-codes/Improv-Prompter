@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Improv Prompter</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0D0D0F;
+    --surface: #16161A;
+    --border: #2A2A32;
+    --amber: #F5A623;
+    --amber-dim: rgba(245,166,35,0.12);
+    --amber-glow: rgba(245,166,35,0.06);
+    --blue: #6B7FD7;
+    --text: #E8E6E0;
+    --muted: #6B6B72;
+    --word-font: 'Playfair Display', Georgia, serif;
+    --ui-font: 'Inter', sans-serif;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--ui-font);
+    overscroll-behavior: none;
+  }
+
+  /* ── Stage ── */
+  #stage {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.4s;
+  }
+
+  /* Spotlight radial glow */
+  #spotlight {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 60% 55% at 50% 50%,
+      rgba(245,166,35,0.07) 0%,
+      rgba(245,166,35,0.03) 40%,
+      transparent 70%);
+    pointer-events: none;
+    transition: opacity 0.5s;
+  }
+
+  /* Flash feedback on tap */
+  #stage.flash #spotlight {
+    background: radial-gradient(ellipse 60% 55% at 50% 50%,
+      rgba(245,166,35,0.18) 0%,
+      rgba(245,166,35,0.07) 40%,
+      transparent 70%);
+  }
+
+  /* ── Word display ── */
+  #word-container {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35em;
+    padding: 2rem;
+    text-align: center;
+    max-width: 90vw;
+  }
+
+  .word {
+    font-family: var(--word-font);
+    font-weight: 900;
+    color: var(--text);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+    animation: wordIn 0.45s cubic-bezier(0.22,1,0.36,1) forwards;
+    text-shadow:
+      0 0 60px rgba(245,166,35,0.25),
+      0 0 120px rgba(245,166,35,0.10);
+  }
+
+  @keyframes wordIn {
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* Font size scales with word count */
+  .size-1  .word { font-size: clamp(3.5rem, 14vw, 9rem); }
+  .size-2  .word { font-size: clamp(2.8rem, 10vw, 7rem); }
+  .size-3  .word { font-size: clamp(2.2rem, 7.5vw, 5.5rem); }
+  .size-4  .word { font-size: clamp(1.8rem, 6vw, 4.5rem); }
+  .size-5  .word { font-size: clamp(1.5rem, 5vw, 3.8rem); }
+  .size-many .word { font-size: clamp(1.2rem, 4vw, 3rem); }
+
+  /* Amber accent on first word */
+  .word:first-child { color: var(--amber); }
+
+  /* Separator dot between words */
+  .word-sep {
+    color: var(--muted);
+    font-family: var(--word-font);
+    font-size: 0.6em;
+    opacity: 0.4;
+    line-height: 1;
+    animation: wordIn 0.45s cubic-bezier(0.22,1,0.36,1) forwards;
+  }
+
+  /* Tap hint */
+  #tap-hint {
+    position: relative;
+    z-index: 2;
+    margin-top: 2.5rem;
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 300;
+    opacity: 0;
+    animation: fadeHint 1s 1.2s ease forwards;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  #tap-hint::before, #tap-hint::after {
+    content: '';
+    display: block;
+    width: 24px;
+    height: 1px;
+    background: var(--muted);
+    opacity: 0.4;
+  }
+  @keyframes fadeHint {
+    to { opacity: 1; }
+  }
+  #tap-hint.hidden { display: none; }
+
+  /* ── Controls Panel ── */
+  #controls {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    padding: 1rem 1.25rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    background: linear-gradient(to top, rgba(13,13,15,0.95) 60%, transparent);
+  }
+
+  #controls-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 0.45rem 0.75rem 0.45rem 1rem;
+    backdrop-filter: blur(12px);
+  }
+
+  #controls-inner label {
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .counter-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 1.1rem;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s, background 0.15s;
+    line-height: 1;
+    padding: 0;
+    flex-shrink: 0;
+  }
+  .counter-btn:hover, .counter-btn:focus-visible {
+    color: var(--amber);
+    background: var(--amber-dim);
+    outline: none;
+  }
+  .counter-btn:disabled {
+    opacity: 0.25;
+    cursor: default;
+  }
+
+  #word-count-display {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text);
+    min-width: 1.5ch;
+    text-align: center;
+  }
+
+  /* New words button */
+  #new-btn {
+    background: var(--amber);
+    color: #0D0D0F;
+    border: none;
+    border-radius: 100px;
+    padding: 0.6rem 1.3rem;
+    font-family: var(--ui-font);
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.2s, background 0.15s;
+    box-shadow: 0 0 20px rgba(245,166,35,0.3);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  #new-btn:hover {
+    background: #fbb73d;
+    box-shadow: 0 0 30px rgba(245,166,35,0.45);
+  }
+  #new-btn:active {
+    transform: scale(0.96);
+  }
+
+  /* ── Header badge ── */
+  #header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    pointer-events: none;
+  }
+
+  #brand {
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 400;
+    pointer-events: none;
+  }
+
+  #timer-display {
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Error state ── */
+  #error-msg {
+    position: relative;
+    z-index: 2;
+    font-size: 0.85rem;
+    color: var(--muted);
+    text-align: center;
+    max-width: 320px;
+    line-height: 1.6;
+  }
+
+  /* ── Reduced motion ── */
+  @media (prefers-reduced-motion: reduce) {
+    .word, .word-sep { animation: none; opacity: 1; transform: none; }
+    #tap-hint { animation: none; opacity: 1; }
+  }
+
+  /* ── Mobile tweaks ── */
+  @media (max-width: 480px) {
+    #controls { padding: 0.75rem 0.85rem 1rem; gap: 0.6rem; }
+    #controls-inner { padding: 0.4rem 0.6rem 0.4rem 0.85rem; gap: 0.5rem; }
+    #new-btn { padding: 0.55rem 1rem; font-size: 0.78rem; }
+  }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <span id="brand">Improv Prompter</span>
+  <span id="timer-display"></span>
+</div>
+
+<div id="stage" role="button" aria-label="Get new words" tabindex="0">
+  <div id="spotlight"></div>
+  <div id="word-container" class="size-1">
+    <span class="word" style="animation-delay:0s">Loading…</span>
+  </div>
+  <div id="tap-hint">tap anywhere for new words</div>
+</div>
+
+<div id="controls" aria-label="Controls">
+  <div id="controls-inner">
+    <label for="word-count-display">Words</label>
+    <button class="counter-btn" id="decrement-btn" aria-label="Fewer words" disabled>−</button>
+    <span id="word-count-display" aria-live="polite">1</span>
+    <button class="counter-btn" id="increment-btn" aria-label="More words">+</button>
+  </div>
+  <button id="new-btn" aria-label="New words">New words</button>
+</div>
+
+<script>
+(async () => {
+  // ── Config ──
+  const WORD_FILE = '/AppAssets/10000Words.txt';
+  const MAX_WORDS = 10;
+  const DEFAULT_COUNT = 1;
+
+  // ── State ──
+  let allWords = [];
+  let wordCount = DEFAULT_COUNT;
+  let timerInterval = null;
+  let secondsElapsed = 0;
+  let hintHidden = false;
+
+  // ── Elements ──
+  const stage = document.getElementById('stage');
+  const container = document.getElementById('word-container');
+  const hint = document.getElementById('tap-hint');
+  const newBtn = document.getElementById('new-btn');
+  const decrementBtn = document.getElementById('decrement-btn');
+  const incrementBtn = document.getElementById('increment-btn');
+  const countDisplay = document.getElementById('word-count-display');
+  const timerDisplay = document.getElementById('timer-display');
+
+  // ── Load words ──
+  async function loadWords() {
+    try {
+      const res = await fetch(WORD_FILE);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = await res.text();
+      allWords = text.split(/\r?\n/).map(w => w.trim()).filter(w => w.length > 0);
+      if (allWords.length === 0) throw new Error('File is empty');
+      showWords();
+    } catch (err) {
+      container.innerHTML = `<p id="error-msg">Couldn't load words from<br><code>${WORD_FILE}</code><br><small style="color:var(--muted);font-size:0.8em;margin-top:0.5em;display:block;">${err.message}</small></p>`;
+    }
+  }
+
+  // ── Pick random words ──
+  function pickWords(n) {
+    if (allWords.length === 0) return [];
+    const shuffled = [...allWords].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, Math.min(n, shuffled.length));
+  }
+
+  // ── Render words ──
+  function showWords() {
+    const words = pickWords(wordCount);
+
+    // Size class
+    container.className = '';
+    if (wordCount === 1) container.classList.add('size-1');
+    else if (wordCount === 2) container.classList.add('size-2');
+    else if (wordCount === 3) container.classList.add('size-3');
+    else if (wordCount === 4) container.classList.add('size-4');
+    else if (wordCount === 5) container.classList.add('size-5');
+    else container.classList.add('size-many');
+
+    // Build HTML with staggered animation
+    container.innerHTML = words.map((w, i) => {
+      const delay = (i * 0.07).toFixed(2);
+      const sep = (i < words.length - 1 && wordCount > 1)
+        ? `<span class="word-sep" style="animation-delay:${(i * 0.07 + 0.04).toFixed(2)}s">·</span>` : '';
+      return `<span class="word" style="animation-delay:${delay}s">${escapeHTML(w)}</span>${sep}`;
+    }).join('');
+
+    // Flash spotlight
+    stage.classList.add('flash');
+    setTimeout(() => stage.classList.remove('flash'), 200);
+
+    // Hide hint after first tap
+    if (!hintHidden && allWords.length > 0) { /* keep until first manual tap */ }
+
+    // Reset timer
+    startTimer();
+  }
+
+  function escapeHTML(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ── Timer ──
+  function startTimer() {
+    clearInterval(timerInterval);
+    secondsElapsed = 0;
+    timerDisplay.textContent = '';
+    timerInterval = setInterval(() => {
+      secondsElapsed++;
+      const m = Math.floor(secondsElapsed / 60).toString().padStart(2, '0');
+      const s = (secondsElapsed % 60).toString().padStart(2, '0');
+      timerDisplay.textContent = `${m}:${s}`;
+    }, 1000);
+  }
+
+  // ── Word count controls ──
+  function updateCountUI() {
+    countDisplay.textContent = wordCount;
+    decrementBtn.disabled = wordCount <= 1;
+    incrementBtn.disabled = wordCount >= MAX_WORDS;
+  }
+
+  decrementBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (wordCount > 1) { wordCount--; updateCountUI(); showWords(); }
+  });
+
+  incrementBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (wordCount < MAX_WORDS) { wordCount++; updateCountUI(); showWords(); }
+  });
+
+  // ── New words button & stage tap ──
+  function handleNewWords() {
+    if (allWords.length === 0) return;
+    if (!hintHidden) {
+      hint.classList.add('hidden');
+      hintHidden = true;
+    }
+    showWords();
+  }
+
+  newBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    handleNewWords();
+  });
+
+  stage.addEventListener('click', handleNewWords);
+
+  stage.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleNewWords(); }
+  });
+
+  // Prevent double-tap zoom on mobile
+  let lastTap = 0;
+  stage.addEventListener('touchend', (e) => {
+    const now = Date.now();
+    if (now - lastTap < 300) e.preventDefault();
+    lastTap = now;
+  }, { passive: false });
+
+  // ── Init ──
+  updateCountUI();
+  await loadWords();
+})();
+</script>
+</body>
+</html>
