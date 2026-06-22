@@ -30,7 +30,6 @@
     overscroll-behavior: none;
   }
 
-  /* ── Stage ── */
   #stage {
     position: fixed;
     inset: 0;
@@ -44,7 +43,6 @@
     transition: background 0.4s;
   }
 
-  /* Spotlight radial glow */
   #spotlight {
     position: absolute;
     inset: 0;
@@ -56,7 +54,6 @@
     transition: opacity 0.5s;
   }
 
-  /* Flash feedback on tap */
   #stage.flash #spotlight {
     background: radial-gradient(ellipse 60% 55% at 50% 50%,
       rgba(245,166,35,0.18) 0%,
@@ -64,7 +61,6 @@
       transparent 70%);
   }
 
-  /* ── Word display ── */
   #word-container {
     position: relative;
     z-index: 2;
@@ -95,7 +91,6 @@
     to { opacity: 1; transform: translateY(0) scale(1); }
   }
 
-  /* Font size scales with word count */
   .size-1  .word { font-size: clamp(3.5rem, 14vw, 9rem); }
   .size-2  .word { font-size: clamp(2.8rem, 10vw, 7rem); }
   .size-3  .word { font-size: clamp(2.2rem, 7.5vw, 5.5rem); }
@@ -103,10 +98,8 @@
   .size-5  .word { font-size: clamp(1.5rem, 5vw, 3.8rem); }
   .size-many .word { font-size: clamp(1.2rem, 4vw, 3rem); }
 
-  /* Amber accent on first word */
   .word:first-child { color: var(--amber); }
 
-  /* Separator dot between words */
   .word-sep {
     color: var(--muted);
     font-family: var(--word-font);
@@ -116,7 +109,6 @@
     animation: wordIn 0.45s cubic-bezier(0.22,1,0.36,1) forwards;
   }
 
-  /* Tap hint */
   #tap-hint {
     position: relative;
     z-index: 2;
@@ -157,8 +149,16 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1rem;
+    gap: 0.75rem;
     background: linear-gradient(to top, rgba(13,13,15,0.95) 60%, transparent);
+    flex-wrap: wrap;
+  }
+
+  #controls-left {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
   }
 
   #controls-inner {
@@ -215,6 +215,77 @@
     text-align: center;
   }
 
+  /* ── Timed mode toggle ── */
+  #timer-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 0.45rem 0.9rem;
+    cursor: pointer;
+    font-family: var(--ui-font);
+    font-size: 0.72rem;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  #timer-toggle:hover {
+    color: var(--text);
+    border-color: rgba(245,166,35,0.35);
+  }
+  #timer-toggle.active {
+    color: var(--amber);
+    border-color: rgba(245,166,35,0.5);
+    background: var(--amber-dim);
+  }
+
+  .toggle-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.5;
+    flex-shrink: 0;
+    transition: opacity 0.2s;
+  }
+  #timer-toggle.active .toggle-dot {
+    opacity: 1;
+  }
+
+  /* ── Duration picker (shown when timed mode on) ── */
+  #duration-picker {
+    display: none;
+    align-items: center;
+    gap: 0.75rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 0.45rem 0.75rem 0.45rem 1rem;
+  }
+  #duration-picker.visible { display: flex; }
+
+  #duration-picker label {
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  #duration-display {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text);
+    min-width: 3ch;
+    text-align: center;
+  }
+
   /* New words button */
   #new-btn {
     background: var(--amber);
@@ -240,7 +311,7 @@
     transform: scale(0.96);
   }
 
-  /* ── Header badge ── */
+  /* ── Header ── */
   #header {
     position: fixed;
     top: 0;
@@ -260,17 +331,65 @@
     text-transform: uppercase;
     color: var(--muted);
     font-weight: 400;
+  }
+
+  /* ── Timer display ── */
+  #timer-wrap {
+    position: relative;
+    width: 52px;
+    height: 52px;
     pointer-events: none;
   }
 
-  #timer-display {
+  #timer-wrap.hidden { display: none; }
+
+  #timer-ring {
+    position: absolute;
+    inset: 0;
+    width: 52px;
+    height: 52px;
+    transform: rotate(-90deg);
+  }
+
+  #ring-track {
+    fill: none;
+    stroke: rgba(245,166,35,0.12);
+    stroke-width: 2;
+  }
+  #ring-progress {
+    fill: none;
+    stroke: var(--amber);
+    stroke-width: 2;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s linear, stroke 0.3s;
+  }
+
+  #timer-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--amber);
+    letter-spacing: 0.04em;
+    font-variant-numeric: tabular-nums;
+    font-family: var(--ui-font);
+  }
+
+  /* Countdown urgency — last 5 seconds */
+  #timer-wrap.urgent #ring-progress { stroke: #e05b3a; }
+  #timer-wrap.urgent #timer-text { color: #e05b3a; }
+
+  /* Count-up timer (non-timed mode) */
+  #elapsed-display {
     font-size: 0.72rem;
     letter-spacing: 0.1em;
     color: var(--muted);
     font-variant-numeric: tabular-nums;
   }
 
-  /* ── Error state ── */
   #error-msg {
     position: relative;
     z-index: 2;
@@ -281,17 +400,18 @@
     line-height: 1.6;
   }
 
-  /* ── Reduced motion ── */
   @media (prefers-reduced-motion: reduce) {
     .word, .word-sep { animation: none; opacity: 1; transform: none; }
     #tap-hint { animation: none; opacity: 1; }
+    #ring-progress { transition: none; }
   }
 
-  /* ── Mobile tweaks ── */
-  @media (max-width: 480px) {
-    #controls { padding: 0.75rem 0.85rem 1rem; gap: 0.6rem; }
+  @media (max-width: 540px) {
+    #controls { padding: 0.75rem 0.85rem 1rem; gap: 0.5rem; }
     #controls-inner { padding: 0.4rem 0.6rem 0.4rem 0.85rem; gap: 0.5rem; }
     #new-btn { padding: 0.55rem 1rem; font-size: 0.78rem; }
+    #timer-toggle { padding: 0.4rem 0.75rem; }
+    #duration-picker { padding: 0.4rem 0.6rem 0.4rem 0.85rem; }
   }
 </style>
 </head>
@@ -299,7 +419,14 @@
 
 <div id="header">
   <span id="brand">Improv Prompter</span>
-  <span id="timer-display"></span>
+  <div id="timer-wrap" class="hidden" aria-live="polite" aria-label="Countdown timer">
+    <svg id="timer-ring" viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg">
+      <circle id="ring-track" cx="26" cy="26" r="22"/>
+      <circle id="ring-progress" cx="26" cy="26" r="22"/>
+    </svg>
+    <div id="timer-text">—</div>
+  </div>
+  <span id="elapsed-display"></span>
 </div>
 
 <div id="stage" role="button" aria-label="Get new words" tabindex="0">
@@ -311,30 +438,53 @@
 </div>
 
 <div id="controls" aria-label="Controls">
-  <div id="controls-inner">
-    <label for="word-count-display">Words</label>
-    <button class="counter-btn" id="decrement-btn" aria-label="Fewer words" disabled>−</button>
-    <span id="word-count-display" aria-live="polite">1</span>
-    <button class="counter-btn" id="increment-btn" aria-label="More words">+</button>
+  <div id="controls-left">
+    <div id="controls-inner">
+      <label for="word-count-display">Words</label>
+      <button class="counter-btn" id="decrement-btn" aria-label="Fewer words" disabled>−</button>
+      <span id="word-count-display" aria-live="polite">1</span>
+      <button class="counter-btn" id="increment-btn" aria-label="More words">+</button>
+    </div>
+
+    <button id="timer-toggle" aria-pressed="false">
+      <span class="toggle-dot"></span>
+      Timed
+    </button>
+
+    <div id="duration-picker" role="group" aria-label="Timer duration">
+      <label>Duration</label>
+      <button class="counter-btn" id="dur-decrement-btn" aria-label="Less time">−</button>
+      <span id="duration-display">1:00</span>
+      <button class="counter-btn" id="dur-increment-btn" aria-label="More time">+</button>
+    </div>
   </div>
+
   <button id="new-btn" aria-label="New words">New words</button>
 </div>
 
 <script>
 (async () => {
-  // ── Config ──
   const WORD_FILE = './AppAssets/10000Words.txt';
   const MAX_WORDS = 10;
   const DEFAULT_COUNT = 1;
 
-  // ── State ──
+  const DURATIONS = [30, 60, 90, 120, 180, 300];
+  const DEFAULT_DURATION_IDX = 1;
+
   let allWords = [];
   let wordCount = DEFAULT_COUNT;
-  let timerInterval = null;
-  let secondsElapsed = 0;
   let hintHidden = false;
 
-  // ── Elements ──
+  let timedMode = false;
+  let durationIdx = DEFAULT_DURATION_IDX;
+  let countdown = null;
+  let countdownSecondsLeft = 0;
+
+  let elapsedInterval = null;
+  let secondsElapsed = 0;
+
+  const CIRCUMFERENCE = 2 * Math.PI * 22;
+
   const stage = document.getElementById('stage');
   const container = document.getElementById('word-container');
   const hint = document.getElementById('tap-hint');
@@ -342,9 +492,21 @@
   const decrementBtn = document.getElementById('decrement-btn');
   const incrementBtn = document.getElementById('increment-btn');
   const countDisplay = document.getElementById('word-count-display');
-  const timerDisplay = document.getElementById('timer-display');
+  const elapsedDisplay = document.getElementById('elapsed-display');
 
-  // ── Load words ──
+  const timerToggle = document.getElementById('timer-toggle');
+  const durationPicker = document.getElementById('duration-picker');
+  const durDecrementBtn = document.getElementById('dur-decrement-btn');
+  const durIncrementBtn = document.getElementById('dur-increment-btn');
+  const durationDisplay = document.getElementById('duration-display');
+
+  const timerWrap = document.getElementById('timer-wrap');
+  const timerText = document.getElementById('timer-text');
+  const ringProgress = document.getElementById('ring-progress');
+
+  ringProgress.style.strokeDasharray = CIRCUMFERENCE;
+  ringProgress.style.strokeDashoffset = 0;
+
   async function loadWords() {
     try {
       const res = await fetch(WORD_FILE);
@@ -358,18 +520,18 @@
     }
   }
 
-  // ── Pick random words ──
   function pickWords(n) {
     if (allWords.length === 0) return [];
     const shuffled = [...allWords].sort(() => Math.random() - 0.5);
     return shuffled.slice(0, Math.min(n, shuffled.length));
   }
 
-  // ── Render words ──
+  function escapeHTML(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
   function showWords() {
     const words = pickWords(wordCount);
-
-    // Size class
     container.className = '';
     if (wordCount === 1) container.classList.add('size-1');
     else if (wordCount === 2) container.classList.add('size-2');
@@ -378,7 +540,6 @@
     else if (wordCount === 5) container.classList.add('size-5');
     else container.classList.add('size-many');
 
-    // Build HTML with staggered animation
     container.innerHTML = words.map((w, i) => {
       const delay = (i * 0.07).toFixed(2);
       const sep = (i < words.length - 1 && wordCount > 1)
@@ -386,35 +547,127 @@
       return `<span class="word" style="animation-delay:${delay}s">${escapeHTML(w)}</span>${sep}`;
     }).join('');
 
-    // Flash spotlight
     stage.classList.add('flash');
     setTimeout(() => stage.classList.remove('flash'), 200);
 
-    // Hide hint after first tap
-    if (!hintHidden && allWords.length > 0) { /* keep until first manual tap */ }
-
-    // Reset timer
-    startTimer();
+    if (timedMode) {
+      startCountdown();
+    } else {
+      startElapsed();
+    }
   }
 
-  function escapeHTML(str) {
-    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  }
-
-  // ── Timer ──
-  function startTimer() {
-    clearInterval(timerInterval);
+  /* ── Elapsed timer (non-timed mode) ── */
+  function startElapsed() {
+    clearInterval(elapsedInterval);
     secondsElapsed = 0;
-    timerDisplay.textContent = '';
-    timerInterval = setInterval(() => {
+    elapsedDisplay.textContent = '';
+    elapsedInterval = setInterval(() => {
       secondsElapsed++;
       const m = Math.floor(secondsElapsed / 60).toString().padStart(2, '0');
       const s = (secondsElapsed % 60).toString().padStart(2, '0');
-      timerDisplay.textContent = `${m}:${s}`;
+      elapsedDisplay.textContent = `${m}:${s}`;
     }, 1000);
   }
 
-  // ── Word count controls ──
+  function stopElapsed() {
+    clearInterval(elapsedInterval);
+    elapsedDisplay.textContent = '';
+  }
+
+  /* ── Countdown timer ── */
+  function getDuration() {
+    return DURATIONS[durationIdx];
+  }
+
+  function formatTime(secs) {
+    const m = Math.floor(secs / 60).toString().padStart(2, '0');
+    const s = (secs % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+
+  function setRingProgress(fraction) {
+    const offset = CIRCUMFERENCE * (1 - Math.max(0, Math.min(1, fraction)));
+    ringProgress.style.strokeDashoffset = offset;
+  }
+
+  function startCountdown() {
+    clearInterval(countdown);
+    timerWrap.classList.remove('urgent');
+    countdownSecondsLeft = getDuration();
+    timerText.textContent = formatTime(countdownSecondsLeft);
+    setRingProgress(1);
+
+    countdown = setInterval(() => {
+      countdownSecondsLeft--;
+      timerText.textContent = formatTime(countdownSecondsLeft);
+      setRingProgress(countdownSecondsLeft / getDuration());
+
+      if (countdownSecondsLeft <= 5) {
+        timerWrap.classList.add('urgent');
+      }
+
+      if (countdownSecondsLeft <= 0) {
+        clearInterval(countdown);
+        if (allWords.length > 0) {
+          showWords();
+        }
+      }
+    }, 1000);
+  }
+
+  function stopCountdown() {
+    clearInterval(countdown);
+    timerWrap.classList.remove('urgent');
+    timerText.textContent = '—';
+    setRingProgress(0);
+  }
+
+  /* ── Timed mode toggle ── */
+  timerToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    timedMode = !timedMode;
+    timerToggle.classList.toggle('active', timedMode);
+    timerToggle.setAttribute('aria-pressed', timedMode);
+    durationPicker.classList.toggle('visible', timedMode);
+    timerWrap.classList.toggle('hidden', !timedMode);
+
+    if (timedMode) {
+      stopElapsed();
+      if (allWords.length > 0) startCountdown();
+    } else {
+      stopCountdown();
+      timerWrap.classList.add('hidden');
+      if (allWords.length > 0) startElapsed();
+    }
+  });
+
+  /* ── Duration controls ── */
+  function updateDurationUI() {
+    durationDisplay.textContent = formatTime(getDuration());
+    durDecrementBtn.disabled = durationIdx <= 0;
+    durIncrementBtn.disabled = durationIdx >= DURATIONS.length - 1;
+  }
+
+  durDecrementBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (durationIdx > 0) {
+      durationIdx--;
+      updateDurationUI();
+      if (timedMode && allWords.length > 0) startCountdown();
+    }
+  });
+
+  durIncrementBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (durationIdx < DURATIONS.length - 1) {
+      durationIdx++;
+      updateDurationUI();
+      if (timedMode && allWords.length > 0) startCountdown();
+    }
+  });
+
+  /* ── Word count controls ── */
   function updateCountUI() {
     countDisplay.textContent = wordCount;
     decrementBtn.disabled = wordCount <= 1;
@@ -431,7 +684,7 @@
     if (wordCount < MAX_WORDS) { wordCount++; updateCountUI(); showWords(); }
   });
 
-  // ── New words button & stage tap ──
+  /* ── New words / stage tap ── */
   function handleNewWords() {
     if (allWords.length === 0) return;
     if (!hintHidden) {
@@ -452,7 +705,6 @@
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleNewWords(); }
   });
 
-  // Prevent double-tap zoom on mobile
   let lastTap = 0;
   stage.addEventListener('touchend', (e) => {
     const now = Date.now();
@@ -460,8 +712,9 @@
     lastTap = now;
   }, { passive: false });
 
-  // ── Init ──
+  /* ── Init ── */
   updateCountUI();
+  updateDurationUI();
   await loadWords();
 })();
 </script>
